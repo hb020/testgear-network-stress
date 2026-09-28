@@ -74,6 +74,14 @@ struct Args {
     #[arg(long)]
     no_proxy: bool,
 
+    /// Start HiSLIP sessions in overlapped mode rather than synchronized.
+    ///
+    /// Both are implemented and a client can switch at any device clear, so
+    /// this only picks what the server announces at Initialize -- which is the
+    /// part a client that never clears the device is stuck with.
+    #[arg(long)]
+    hislip_overlap: bool,
+
     /// Exit once the supervising control connection closes.
     ///
     /// The harness stops the server through that connection, but it does not
@@ -187,9 +195,11 @@ async fn main() -> Result<()> {
 
     let hislip_ctrl = backend.clone();
     let hislip_locks = locks.clone();
+    let hislip_overlap = args.hislip_overlap;
     let hislip_fut = async move {
         let config = hislip::server::Config {
             locks: hislip_locks,
+            prefer_overlap: hislip_overlap,
             ..Default::default()
         };
         let device_for = move |subaddr: &str| {
